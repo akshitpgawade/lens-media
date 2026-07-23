@@ -482,78 +482,72 @@ function HeadlineDiff({
   outletById: Record<string, EventBundle["outlets"][number]>;
   snapshots: EventBundle["snapshots"];
 }) {
-  const [articleId, setArticleId] = useState(articles[0]?.id ?? "");
-  const articleSnaps = useMemo(
-    () => snapshots.filter((s) => s.article_id === articleId).sort((a, b) => a.captured_at.localeCompare(b.captured_at)),
-    [snapshots, articleId],
+  const articleById = useMemo(
+    () => Object.fromEntries(articles.map((a) => [a.id, a])),
+    [articles],
   );
-  const [fromId, setFromId] = useState(articleSnaps[0]?.id ?? "");
-  const [toId, setToId] = useState(articleSnaps[articleSnaps.length - 1]?.id ?? "");
+  const allSnaps = useMemo(
+    () => [...snapshots].sort((a, b) => a.captured_at.localeCompare(b.captured_at)),
+    [snapshots],
+  );
 
-  // Reset when article changes
-  const currentFromValid = articleSnaps.some((s) => s.id === fromId);
-  const currentToValid = articleSnaps.some((s) => s.id === toId);
-  const effectiveFrom = currentFromValid ? fromId : articleSnaps[0]?.id;
-  const effectiveTo = currentToValid ? toId : articleSnaps[articleSnaps.length - 1]?.id;
+  const [fromId, setFromId] = useState(allSnaps[0]?.id ?? "");
+  const [toId, setToId] = useState(allSnaps[allSnaps.length - 1]?.id ?? "");
 
-  const from = articleSnaps.find((s) => s.id === effectiveFrom);
-  const to = articleSnaps.find((s) => s.id === effectiveTo);
+  const from = allSnaps.find((s) => s.id === fromId) ?? allSnaps[0];
+  const to = allSnaps.find((s) => s.id === toId) ?? allSnaps[allSnaps.length - 1];
 
   const parts = useMemo(() => {
     if (!from || !to) return [];
     return diffWords(from.headline_text, to.headline_text);
   }, [from, to]);
 
+  const labelFor = (s: EventBundle["snapshots"][number]) => {
+    const art = articleById[s.article_id];
+    const outletName = art ? outletById[art.outlet_id]?.name ?? "Unknown" : "Unknown";
+    return `${outletName} · ${new Date(s.captured_at).toLocaleString()} · ${s.source}`;
+  };
+
+  const crossArticle = from && to && from.article_id !== to.article_id;
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-xs">
-          <span className="eyebrow">Article</span>
+          <span className="eyebrow">From snapshot</span>
           <select
-            value={articleId}
-            onChange={(e) => {
-              setArticleId(e.target.value);
-              setFromId("");
-              setToId("");
-            }}
-            className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
-          >
-            {articles.map((a) => (
-              <option key={a.id} value={a.id}>
-                {outletById[a.outlet_id].name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs">
-          <span className="eyebrow">From</span>
-          <select
-            value={effectiveFrom}
+            value={from?.id ?? ""}
             onChange={(e) => setFromId(e.target.value)}
             className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
           >
-            {articleSnaps.map((s) => (
+            {allSnaps.map((s) => (
               <option key={s.id} value={s.id}>
-                {new Date(s.captured_at).toLocaleString()} · {s.source}
+                {labelFor(s)}
               </option>
             ))}
           </select>
         </label>
         <label className="block text-xs">
-          <span className="eyebrow">To</span>
+          <span className="eyebrow">To snapshot</span>
           <select
-            value={effectiveTo}
+            value={to?.id ?? ""}
             onChange={(e) => setToId(e.target.value)}
             className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
           >
-            {articleSnaps.map((s) => (
+            {allSnaps.map((s) => (
               <option key={s.id} value={s.id}>
-                {new Date(s.captured_at).toLocaleString()} · {s.source}
+                {labelFor(s)}
               </option>
             ))}
           </select>
         </label>
       </div>
+
+      {crossArticle ? (
+        <p className="rounded-md border border-dashed border-rule bg-secondary/40 px-3 py-2 text-xs text-ink-muted">
+          Comparing snapshots from two different articles — differences reflect editorial choice, not one headline revised over time.
+        </p>
+      ) : null}
 
       <div className="rounded-md border border-rule bg-background p-4 font-serif text-lg leading-snug">
         {parts.length === 0 ? (
