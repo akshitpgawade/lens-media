@@ -343,6 +343,10 @@ function AgencyFraming({ rows }: { rows: { outlet: string; score: number; phrase
   );
 }
 
+type CoverageSort =
+  | { kind: "stakeholder"; dir: "asc" | "desc" }
+  | { kind: "outlet"; outletId: string; dir: "asc" | "desc" };
+
 function CoverageMatrix({
   stakeholders,
   outlets,
@@ -360,21 +364,79 @@ function CoverageMatrix({
     return m;
   }, [coverage]);
 
+  const [sort, setSort] = useState<CoverageSort>({ kind: "stakeholder", dir: "asc" });
+
+  const sortedStakeholders = useMemo(() => {
+    const rows = [...stakeholders];
+    if (sort.kind === "stakeholder") {
+      rows.sort((a, b) => a.name.localeCompare(b.name));
+      if (sort.dir === "desc") rows.reverse();
+    } else {
+      const art = articleByOutlet[sort.outletId];
+      rows.sort((a, b) => {
+        const pa = art ? (lookup.get(`${art.id}:${a.id}`) ? 1 : 0) : 0;
+        const pb = art ? (lookup.get(`${art.id}:${b.id}`) ? 1 : 0) : 0;
+        if (pa !== pb) return sort.dir === "asc" ? pa - pb : pb - pa;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    return rows;
+  }, [stakeholders, sort, articleByOutlet, lookup]);
+
+  const toggleStakeholder = () =>
+    setSort((s) =>
+      s.kind === "stakeholder"
+        ? { kind: "stakeholder", dir: s.dir === "asc" ? "desc" : "asc" }
+        : { kind: "stakeholder", dir: "asc" },
+    );
+  const toggleOutlet = (outletId: string) =>
+    setSort((s) =>
+      s.kind === "outlet" && s.outletId === outletId
+        ? { kind: "outlet", outletId, dir: s.dir === "asc" ? "desc" : "asc" }
+        : { kind: "outlet", outletId, dir: "desc" },
+    );
+
+  const sortIcon = (active: boolean, dir: "asc" | "desc") => {
+    if (!active) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
-            <th className="border-b border-rule py-2 text-left font-serif text-base font-normal">Stakeholder</th>
-            {outlets.map((o) => (
-              <th key={o.id} className="border-b border-rule px-2 py-2 text-center text-xs font-medium">
-                {o.name}
-              </th>
-            ))}
+            <th className="border-b border-rule py-2 text-left font-serif text-base font-normal">
+              <button
+                type="button"
+                onClick={toggleStakeholder}
+                className="inline-flex items-center gap-1.5 hover:text-accent"
+                aria-label="Sort by stakeholder name"
+              >
+                Stakeholder
+                {sortIcon(sort.kind === "stakeholder", sort.kind === "stakeholder" ? sort.dir : "asc")}
+              </button>
+            </th>
+            {outlets.map((o) => {
+              const active = sort.kind === "outlet" && sort.outletId === o.id;
+              return (
+                <th key={o.id} className="border-b border-rule px-2 py-2 text-center text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleOutlet(o.id)}
+                    className="inline-flex items-center gap-1.5 hover:text-accent"
+                    aria-label={`Sort by ${o.name} coverage`}
+                  >
+                    {o.name}
+                    {sortIcon(active, active ? sort.dir : "desc")}
+                  </button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {stakeholders.map((s) => (
+          {sortedStakeholders.map((s) => (
             <tr key={s.id} className="hover:bg-secondary/40">
               <td className="border-b border-rule py-3 pr-4">
                 <span className="font-serif">{s.name}</span>
@@ -405,7 +467,7 @@ function CoverageMatrix({
       </table>
       <p className="mt-3 text-xs text-ink-muted">
         <Check className="mr-1 inline h-3 w-3 text-success" /> Represented ·{" "}
-        <Minus className="ml-2 mr-1 inline h-3 w-3" /> Not represented. Absence is a signal, not proof of intent.
+        <Minus className="ml-2 mr-1 inline h-3 w-3" /> Not represented. Click a column header to sort. Absence is a signal, not proof of intent.
       </p>
     </div>
   );
