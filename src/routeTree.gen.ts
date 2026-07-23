@@ -15,6 +15,7 @@ import { Route as AnalyzeRouteImport } from './routes/analyze'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
+import { Route as AuthenticatedDashboardEventIdRouteImport } from './routes/_authenticated/dashboard.$eventId'
 
 const MethodologyRoute = MethodologyRouteImport.update({
   id: '/methodology',
@@ -45,6 +46,12 @@ const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
   path: '/account',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDashboardEventIdRoute =
+  AuthenticatedDashboardEventIdRouteImport.update({
+    id: '/dashboard/$eventId',
+    path: '/dashboard/$eventId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -52,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/methodology': typeof MethodologyRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/dashboard/$eventId': typeof AuthenticatedDashboardEventIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/methodology': typeof MethodologyRoute
   '/account': typeof AuthenticatedAccountRoute
+  '/dashboard/$eventId': typeof AuthenticatedDashboardEventIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -68,12 +77,25 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/methodology': typeof MethodologyRoute
   '/_authenticated/account': typeof AuthenticatedAccountRoute
+  '/_authenticated/dashboard/$eventId': typeof AuthenticatedDashboardEventIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analyze' | '/auth' | '/methodology' | '/account'
+  fullPaths:
+    | '/'
+    | '/analyze'
+    | '/auth'
+    | '/methodology'
+    | '/account'
+    | '/dashboard/$eventId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analyze' | '/auth' | '/methodology' | '/account'
+  to:
+    | '/'
+    | '/analyze'
+    | '/auth'
+    | '/methodology'
+    | '/account'
+    | '/dashboard/$eventId'
   id:
     | '__root__'
     | '/'
@@ -82,6 +104,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/methodology'
     | '/_authenticated/account'
+    | '/_authenticated/dashboard/$eventId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -136,15 +159,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dashboard/$eventId': {
+      id: '/_authenticated/dashboard/$eventId'
+      path: '/dashboard/$eventId'
+      fullPath: '/dashboard/$eventId'
+      preLoaderRoute: typeof AuthenticatedDashboardEventIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
+  AuthenticatedDashboardEventIdRoute: typeof AuthenticatedDashboardEventIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
+  AuthenticatedDashboardEventIdRoute: AuthenticatedDashboardEventIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
