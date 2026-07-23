@@ -186,6 +186,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
         Observations, not verdicts. See <Link to="/methodology" className="underline">methodology</Link> for how each signal is measured.
       </p>
     </div>
+    </TooltipProvider>
   );
 }
 
