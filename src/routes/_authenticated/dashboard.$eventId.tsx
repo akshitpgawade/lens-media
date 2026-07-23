@@ -248,20 +248,58 @@ function SourceAttributionChart({ rows }: { rows: { outlet: string; official: nu
 }
 
 function LanguageIntensityChart({ rows }: { rows: { outlet: string; Emotional: number; Certainty: number; Urgency: number }[] }) {
+  const [view, setView] = useState<"bars" | "radar">("bars");
+  const URGENCY = "oklch(0.62 0.11 150)";
+
+  // Radar wants one axis point per outlet and one series per metric.
+  const radarData = rows.map((r) => ({
+    outlet: r.outlet,
+    Emotional: r.Emotional,
+    Certainty: r.Certainty,
+    Urgency: r.Urgency,
+  }));
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer>
-        <BarChart data={rows} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
-          <CartesianGrid stroke="var(--color-rule)" vertical={false} />
-          <XAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} interval={0} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
-          <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="Emotional" fill={ACCENT} />
-          <Bar dataKey="Certainty" fill={INK} />
-          <Bar dataKey="Urgency" fill="oklch(0.62 0.11 150)" />
-        </BarChart>
-      </ResponsiveContainer>
+    <div>
+      <div className="mb-3 flex justify-end">
+        <ToggleGroup
+          type="single"
+          size="sm"
+          value={view}
+          onValueChange={(v) => v && setView(v as "bars" | "radar")}
+          className="border border-rule bg-card"
+        >
+          <ToggleGroupItem value="bars" className="text-xs font-mono uppercase">Bars</ToggleGroupItem>
+          <ToggleGroupItem value="radar" className="text-xs font-mono uppercase">Radar</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div className="h-[320px] w-full">
+        <ResponsiveContainer>
+          {view === "bars" ? (
+            <BarChart data={rows} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
+              <CartesianGrid stroke="var(--color-rule)" vertical={false} />
+              <XAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} interval={0} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
+              <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="Emotional" fill={ACCENT} />
+              <Bar dataKey="Certainty" fill={INK} />
+              <Bar dataKey="Urgency" fill={URGENCY} />
+            </BarChart>
+          ) : (
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="var(--color-rule)" />
+              <PolarAngleAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: MUTED }} angle={30} />
+              <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Radar name="Emotional" dataKey="Emotional" stroke={ACCENT} fill={ACCENT} fillOpacity={0.25} />
+              <Radar name="Certainty" dataKey="Certainty" stroke={INK} fill={INK} fillOpacity={0.15} />
+              <Radar name="Urgency" dataKey="Urgency" stroke={URGENCY} fill={URGENCY} fillOpacity={0.2} />
+            </RadarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
