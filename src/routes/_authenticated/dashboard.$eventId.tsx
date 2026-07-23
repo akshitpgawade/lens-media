@@ -5,15 +5,26 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { diffWords } from "diff";
-import { Check, Minus, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Info, Loader2, Minus } from "lucide-react";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { fetchEventBundle, type EventBundle } from "@/lib/narrative-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard/$eventId")({
