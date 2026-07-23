@@ -5,15 +5,26 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Legend,
+  PolarAngleAxis,
+  PolarGrid,
+  PolarRadiusAxis,
+  Radar,
+  RadarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { diffWords } from "diff";
-import { Check, Minus, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, Info, Loader2, Minus } from "lucide-react";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { fetchEventBundle, type EventBundle } from "@/lib/narrative-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard/$eventId")({
@@ -76,6 +87,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
   }, [articles, event]);
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="mx-auto max-w-7xl px-6 py-10">
       {/* Masthead */}
       <div className="border-b-4 border-double border-rule pb-8">
@@ -104,7 +116,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
       <div className="mt-10 grid gap-8 lg:grid-cols-12">
         {/* LEFT column */}
         <div className="space-y-10 lg:col-span-7">
-          <SectionCard n="01" title="Source Attribution Ratio" caption="Who is quoted — official versus independent voices, per outlet.">
+          <SectionCard n="01" title="Source Attribution Ratio" caption="Who is quoted — official versus independent voices, per outlet." tip="Measures the share of quoted sources from official institutions versus independent voices in each outlet's article.">
             <SourceAttributionChart
               rows={signals.source_attribution.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -117,7 +129,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="03" title="Language Intensity" caption="Emotional load, certainty, and urgency in the writing, per outlet.">
+          <SectionCard n="03" title="Language Intensity" caption="Emotional load, certainty, and urgency in the writing, per outlet." tip="Scores three qualities of the writing: how emotionally charged, how certain, and how urgent the language sounds.">
             <LanguageIntensityChart
               rows={signals.language_intensity.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -131,7 +143,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="04" title="Perspective Coverage Matrix" caption="Which stakeholders are represented in each outlet's coverage.">
+          <SectionCard n="04" title="Perspective Coverage Matrix" caption="Which stakeholders are represented in each outlet's coverage." tip="Shows which people or groups affected by the story each outlet actually quoted or referenced.">
             <CoverageMatrix
               stakeholders={stakeholders}
               outlets={outlets}
@@ -143,7 +155,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
 
         {/* RIGHT column */}
         <div className="space-y-10 lg:col-span-5">
-          <SectionCard n="02" title="Agency Framing" caption="Active vs. passive/agentless sentence construction — with example phrases.">
+          <SectionCard n="02" title="Agency Framing" caption="Active vs. passive/agentless sentence construction — with example phrases." tip="Measures how often each outlet names an actor doing something versus using passive or agentless phrasing that hides who acted.">
             <AgencyFraming
               rows={signals.agency_framing.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -156,7 +168,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="05" title="Headline Diff · FrameShift Replay" caption="How the headline changed between two snapshots.">
+          <SectionCard n="05" title="Headline Diff · FrameShift Replay" caption="How the headline changed between two snapshots." tip="Compares any two captured versions of a headline, word by word, so you can see what was added, removed, or reworded over time.">
             <HeadlineDiff
               articles={articles}
               outletById={outletById}
@@ -164,7 +176,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="06" title="Narrative Evolution Timeline" caption="When each stakeholder or angle first entered the coverage.">
+          <SectionCard n="06" title="Narrative Evolution Timeline" caption="When each stakeholder or angle first entered the coverage." tip="Plots the first moment each stakeholder appeared anywhere in the coverage, showing which voices were early and which arrived late.">
             <NarrativeTimeline stakeholders={stakeholders} />
           </SectionCard>
         </div>
@@ -174,16 +186,35 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
         Observations, not verdicts. See <Link to="/methodology" className="underline">methodology</Link> for how each signal is measured.
       </p>
     </div>
+    </TooltipProvider>
   );
 }
 
-function SectionCard({ n, title, caption, children }: { n: string; title: string; caption: string; children: React.ReactNode }) {
+function SectionCard({ n, title, caption, tip, children }: { n: string; title: string; caption: string; tip?: string; children: React.ReactNode }) {
   return (
     <section className="paper-card p-6">
       <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-3">
         <div>
           <p className="font-mono text-[10px] text-ink-muted">{n}</p>
-          <h2 className="headline mt-1 text-2xl">{title}</h2>
+          <h2 className="headline mt-1 flex items-center gap-2 text-2xl">
+            {title}
+            {tip ? (
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`About ${title}`}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-ink-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs font-sans text-xs leading-relaxed">
+                  {tip}
+                </TooltipContent>
+              </UITooltip>
+            ) : null}
+          </h2>
         </div>
       </div>
       <p className="mt-3 text-sm text-ink-muted">{caption}</p>
@@ -217,20 +248,58 @@ function SourceAttributionChart({ rows }: { rows: { outlet: string; official: nu
 }
 
 function LanguageIntensityChart({ rows }: { rows: { outlet: string; Emotional: number; Certainty: number; Urgency: number }[] }) {
+  const [view, setView] = useState<"bars" | "radar">("bars");
+  const URGENCY = "oklch(0.62 0.11 150)";
+
+  // Radar wants one axis point per outlet and one series per metric.
+  const radarData = rows.map((r) => ({
+    outlet: r.outlet,
+    Emotional: r.Emotional,
+    Certainty: r.Certainty,
+    Urgency: r.Urgency,
+  }));
+
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer>
-        <BarChart data={rows} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
-          <CartesianGrid stroke="var(--color-rule)" vertical={false} />
-          <XAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} interval={0} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
-          <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
-          <Legend wrapperStyle={{ fontSize: 12 }} />
-          <Bar dataKey="Emotional" fill={ACCENT} />
-          <Bar dataKey="Certainty" fill={INK} />
-          <Bar dataKey="Urgency" fill="oklch(0.62 0.11 150)" />
-        </BarChart>
-      </ResponsiveContainer>
+    <div>
+      <div className="mb-3 flex justify-end">
+        <ToggleGroup
+          type="single"
+          size="sm"
+          value={view}
+          onValueChange={(v) => v && setView(v as "bars" | "radar")}
+          className="border border-rule bg-card"
+        >
+          <ToggleGroupItem value="bars" className="text-xs font-mono uppercase">Bars</ToggleGroupItem>
+          <ToggleGroupItem value="radar" className="text-xs font-mono uppercase">Radar</ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+      <div className="h-[320px] w-full">
+        <ResponsiveContainer>
+          {view === "bars" ? (
+            <BarChart data={rows} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
+              <CartesianGrid stroke="var(--color-rule)" vertical={false} />
+              <XAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} interval={0} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
+              <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Bar dataKey="Emotional" fill={ACCENT} />
+              <Bar dataKey="Certainty" fill={INK} />
+              <Bar dataKey="Urgency" fill={URGENCY} />
+            </BarChart>
+          ) : (
+            <RadarChart data={radarData} outerRadius="72%">
+              <PolarGrid stroke="var(--color-rule)" />
+              <PolarAngleAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} />
+              <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 10, fill: MUTED }} angle={30} />
+              <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Radar name="Emotional" dataKey="Emotional" stroke={ACCENT} fill={ACCENT} fillOpacity={0.25} />
+              <Radar name="Certainty" dataKey="Certainty" stroke={INK} fill={INK} fillOpacity={0.15} />
+              <Radar name="Urgency" dataKey="Urgency" stroke={URGENCY} fill={URGENCY} fillOpacity={0.2} />
+            </RadarChart>
+          )}
+        </ResponsiveContainer>
+      </div>
     </div>
   );
 }
@@ -274,6 +343,10 @@ function AgencyFraming({ rows }: { rows: { outlet: string; score: number; phrase
   );
 }
 
+type CoverageSort =
+  | { kind: "stakeholder"; dir: "asc" | "desc" }
+  | { kind: "outlet"; outletId: string; dir: "asc" | "desc" };
+
 function CoverageMatrix({
   stakeholders,
   outlets,
@@ -291,21 +364,79 @@ function CoverageMatrix({
     return m;
   }, [coverage]);
 
+  const [sort, setSort] = useState<CoverageSort>({ kind: "stakeholder", dir: "asc" });
+
+  const sortedStakeholders = useMemo(() => {
+    const rows = [...stakeholders];
+    if (sort.kind === "stakeholder") {
+      rows.sort((a, b) => a.name.localeCompare(b.name));
+      if (sort.dir === "desc") rows.reverse();
+    } else {
+      const art = articleByOutlet[sort.outletId];
+      rows.sort((a, b) => {
+        const pa = art ? (lookup.get(`${art.id}:${a.id}`) ? 1 : 0) : 0;
+        const pb = art ? (lookup.get(`${art.id}:${b.id}`) ? 1 : 0) : 0;
+        if (pa !== pb) return sort.dir === "asc" ? pa - pb : pb - pa;
+        return a.name.localeCompare(b.name);
+      });
+    }
+    return rows;
+  }, [stakeholders, sort, articleByOutlet, lookup]);
+
+  const toggleStakeholder = () =>
+    setSort((s) =>
+      s.kind === "stakeholder"
+        ? { kind: "stakeholder", dir: s.dir === "asc" ? "desc" : "asc" }
+        : { kind: "stakeholder", dir: "asc" },
+    );
+  const toggleOutlet = (outletId: string) =>
+    setSort((s) =>
+      s.kind === "outlet" && s.outletId === outletId
+        ? { kind: "outlet", outletId, dir: s.dir === "asc" ? "desc" : "asc" }
+        : { kind: "outlet", outletId, dir: "desc" },
+    );
+
+  const sortIcon = (active: boolean, dir: "asc" | "desc") => {
+    if (!active) return <ArrowUpDown className="h-3 w-3 opacity-40" />;
+    return dir === "asc" ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />;
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr>
-            <th className="border-b border-rule py-2 text-left font-serif text-base font-normal">Stakeholder</th>
-            {outlets.map((o) => (
-              <th key={o.id} className="border-b border-rule px-2 py-2 text-center text-xs font-medium">
-                {o.name}
-              </th>
-            ))}
+            <th className="border-b border-rule py-2 text-left font-serif text-base font-normal">
+              <button
+                type="button"
+                onClick={toggleStakeholder}
+                className="inline-flex items-center gap-1.5 hover:text-accent"
+                aria-label="Sort by stakeholder name"
+              >
+                Stakeholder
+                {sortIcon(sort.kind === "stakeholder", sort.kind === "stakeholder" ? sort.dir : "asc")}
+              </button>
+            </th>
+            {outlets.map((o) => {
+              const active = sort.kind === "outlet" && sort.outletId === o.id;
+              return (
+                <th key={o.id} className="border-b border-rule px-2 py-2 text-center text-xs font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleOutlet(o.id)}
+                    className="inline-flex items-center gap-1.5 hover:text-accent"
+                    aria-label={`Sort by ${o.name} coverage`}
+                  >
+                    {o.name}
+                    {sortIcon(active, active ? sort.dir : "desc")}
+                  </button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {stakeholders.map((s) => (
+          {sortedStakeholders.map((s) => (
             <tr key={s.id} className="hover:bg-secondary/40">
               <td className="border-b border-rule py-3 pr-4">
                 <span className="font-serif">{s.name}</span>
@@ -336,7 +467,7 @@ function CoverageMatrix({
       </table>
       <p className="mt-3 text-xs text-ink-muted">
         <Check className="mr-1 inline h-3 w-3 text-success" /> Represented ·{" "}
-        <Minus className="ml-2 mr-1 inline h-3 w-3" /> Not represented. Absence is a signal, not proof of intent.
+        <Minus className="ml-2 mr-1 inline h-3 w-3" /> Not represented. Click a column header to sort. Absence is a signal, not proof of intent.
       </p>
     </div>
   );
@@ -351,78 +482,72 @@ function HeadlineDiff({
   outletById: Record<string, EventBundle["outlets"][number]>;
   snapshots: EventBundle["snapshots"];
 }) {
-  const [articleId, setArticleId] = useState(articles[0]?.id ?? "");
-  const articleSnaps = useMemo(
-    () => snapshots.filter((s) => s.article_id === articleId).sort((a, b) => a.captured_at.localeCompare(b.captured_at)),
-    [snapshots, articleId],
+  const articleById = useMemo(
+    () => Object.fromEntries(articles.map((a) => [a.id, a])),
+    [articles],
   );
-  const [fromId, setFromId] = useState(articleSnaps[0]?.id ?? "");
-  const [toId, setToId] = useState(articleSnaps[articleSnaps.length - 1]?.id ?? "");
+  const allSnaps = useMemo(
+    () => [...snapshots].sort((a, b) => a.captured_at.localeCompare(b.captured_at)),
+    [snapshots],
+  );
 
-  // Reset when article changes
-  const currentFromValid = articleSnaps.some((s) => s.id === fromId);
-  const currentToValid = articleSnaps.some((s) => s.id === toId);
-  const effectiveFrom = currentFromValid ? fromId : articleSnaps[0]?.id;
-  const effectiveTo = currentToValid ? toId : articleSnaps[articleSnaps.length - 1]?.id;
+  const [fromId, setFromId] = useState(allSnaps[0]?.id ?? "");
+  const [toId, setToId] = useState(allSnaps[allSnaps.length - 1]?.id ?? "");
 
-  const from = articleSnaps.find((s) => s.id === effectiveFrom);
-  const to = articleSnaps.find((s) => s.id === effectiveTo);
+  const from = allSnaps.find((s) => s.id === fromId) ?? allSnaps[0];
+  const to = allSnaps.find((s) => s.id === toId) ?? allSnaps[allSnaps.length - 1];
 
   const parts = useMemo(() => {
     if (!from || !to) return [];
     return diffWords(from.headline_text, to.headline_text);
   }, [from, to]);
 
+  const labelFor = (s: EventBundle["snapshots"][number]) => {
+    const art = articleById[s.article_id];
+    const outletName = art ? outletById[art.outlet_id]?.name ?? "Unknown" : "Unknown";
+    return `${outletName} · ${new Date(s.captured_at).toLocaleString()} · ${s.source}`;
+  };
+
+  const crossArticle = from && to && from.article_id !== to.article_id;
+
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label className="block text-xs">
-          <span className="eyebrow">Article</span>
+          <span className="eyebrow">From snapshot</span>
           <select
-            value={articleId}
-            onChange={(e) => {
-              setArticleId(e.target.value);
-              setFromId("");
-              setToId("");
-            }}
-            className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
-          >
-            {articles.map((a) => (
-              <option key={a.id} value={a.id}>
-                {outletById[a.outlet_id].name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-xs">
-          <span className="eyebrow">From</span>
-          <select
-            value={effectiveFrom}
+            value={from?.id ?? ""}
             onChange={(e) => setFromId(e.target.value)}
             className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
           >
-            {articleSnaps.map((s) => (
+            {allSnaps.map((s) => (
               <option key={s.id} value={s.id}>
-                {new Date(s.captured_at).toLocaleString()} · {s.source}
+                {labelFor(s)}
               </option>
             ))}
           </select>
         </label>
         <label className="block text-xs">
-          <span className="eyebrow">To</span>
+          <span className="eyebrow">To snapshot</span>
           <select
-            value={effectiveTo}
+            value={to?.id ?? ""}
             onChange={(e) => setToId(e.target.value)}
             className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
           >
-            {articleSnaps.map((s) => (
+            {allSnaps.map((s) => (
               <option key={s.id} value={s.id}>
-                {new Date(s.captured_at).toLocaleString()} · {s.source}
+                {labelFor(s)}
               </option>
             ))}
           </select>
         </label>
       </div>
+
+      {crossArticle ? (
+        <p className="rounded-md border border-dashed border-rule bg-secondary/40 px-3 py-2 text-xs text-ink-muted">
+          Comparing snapshots from two different articles — differences reflect editorial choice, not one headline revised over time.
+        </p>
+      ) : null}
 
       <div className="rounded-md border border-rule bg-background p-4 font-serif text-lg leading-snug">
         {parts.length === 0 ? (
