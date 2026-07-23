@@ -87,6 +87,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
   }, [articles, event]);
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className="mx-auto max-w-7xl px-6 py-10">
       {/* Masthead */}
       <div className="border-b-4 border-double border-rule pb-8">
