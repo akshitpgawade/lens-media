@@ -9,8 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as MethodologyRouteImport } from './routes/methodology'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AnalyzeRouteImport } from './routes/analyze'
 import { Route as IndexRouteImport } from './routes/index'
 
+const MethodologyRoute = MethodologyRouteImport.update({
+  id: '/methodology',
+  path: '/methodology',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyzeRoute = AnalyzeRouteImport.update({
+  id: '/analyze',
+  path: '/analyze',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +37,61 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analyze': typeof AnalyzeRoute
+  '/auth': typeof AuthRoute
+  '/methodology': typeof MethodologyRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analyze': typeof AnalyzeRoute
+  '/auth': typeof AuthRoute
+  '/methodology': typeof MethodologyRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analyze': typeof AnalyzeRoute
+  '/auth': typeof AuthRoute
+  '/methodology': typeof MethodologyRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/analyze' | '/auth' | '/methodology'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/analyze' | '/auth' | '/methodology'
+  id: '__root__' | '/' | '/analyze' | '/auth' | '/methodology'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyzeRoute: typeof AnalyzeRoute
+  AuthRoute: typeof AuthRoute
+  MethodologyRoute: typeof MethodologyRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/methodology': {
+      id: '/methodology'
+      path: '/methodology'
+      fullPath: '/methodology'
+      preLoaderRoute: typeof MethodologyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analyze': {
+      id: '/analyze'
+      path: '/analyze'
+      fullPath: '/analyze'
+      preLoaderRoute: typeof AnalyzeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,6 +104,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyzeRoute: AnalyzeRoute,
+  AuthRoute: AuthRoute,
+  MethodologyRoute: MethodologyRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
