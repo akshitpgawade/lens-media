@@ -190,13 +190,31 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
   );
 }
 
-function SectionCard({ n, title, caption, children }: { n: string; title: string; caption: string; children: React.ReactNode }) {
+function SectionCard({ n, title, caption, tip, children }: { n: string; title: string; caption: string; tip?: string; children: React.ReactNode }) {
   return (
     <section className="paper-card p-6">
       <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-3">
         <div>
           <p className="font-mono text-[10px] text-ink-muted">{n}</p>
-          <h2 className="headline mt-1 text-2xl">{title}</h2>
+          <h2 className="headline mt-1 flex items-center gap-2 text-2xl">
+            {title}
+            {tip ? (
+              <UITooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label={`About ${title}`}
+                    className="inline-flex h-5 w-5 items-center justify-center rounded-full text-ink-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs font-sans text-xs leading-relaxed">
+                  {tip}
+                </TooltipContent>
+              </UITooltip>
+            ) : null}
+          </h2>
         </div>
       </div>
       <p className="mt-3 text-sm text-ink-muted">{caption}</p>
