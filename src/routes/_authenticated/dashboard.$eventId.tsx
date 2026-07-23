@@ -202,7 +202,7 @@ function SourceAttributionChart({ rows }: { rows: { outlet: string; official: nu
   return (
     <div className="h-[280px] w-full">
       <ResponsiveContainer>
-        <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }} stackOffset="expand">
+        <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }}>
           <CartesianGrid horizontal={false} stroke="var(--color-rule)" />
           <XAxis type="number" hide domain={[0, 100]} />
           <YAxis dataKey="outlet" type="category" tickLine={false} axisLine={false} width={130} tick={{ fontSize: 12, fill: INK }} />
