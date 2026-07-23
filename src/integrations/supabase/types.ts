@@ -14,7 +14,277 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      articles: {
+        Row: {
+          event_id: string
+          full_text: string
+          headline: string
+          id: string
+          outlet_id: string
+          published_at: string
+          url: string
+        }
+        Insert: {
+          event_id: string
+          full_text: string
+          headline: string
+          id?: string
+          outlet_id: string
+          published_at: string
+          url: string
+        }
+        Update: {
+          event_id?: string
+          full_text?: string
+          headline?: string
+          id?: string
+          outlet_id?: string
+          published_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "articles_outlet_id_fkey"
+            columns: ["outlet_id"]
+            isOneToOne: false
+            referencedRelation: "outlets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coverage_matrix: {
+        Row: {
+          article_id: string
+          present: boolean
+          stakeholder_id: string
+        }
+        Insert: {
+          article_id: string
+          present: boolean
+          stakeholder_id: string
+        }
+        Update: {
+          article_id?: string
+          present?: boolean
+          stakeholder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coverage_matrix_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coverage_matrix_stakeholder_id_fkey"
+            columns: ["stakeholder_id"]
+            isOneToOne: false
+            referencedRelation: "stakeholders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          first_reported_at: string
+          id: string
+          summary: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          first_reported_at: string
+          id?: string
+          summary: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          first_reported_at?: string
+          id?: string
+          summary?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      headline_snapshots: {
+        Row: {
+          article_id: string
+          captured_at: string
+          headline_text: string
+          id: string
+          source: Database["public"]["Enums"]["headline_source"]
+        }
+        Insert: {
+          article_id: string
+          captured_at: string
+          headline_text: string
+          id?: string
+          source: Database["public"]["Enums"]["headline_source"]
+        }
+        Update: {
+          article_id?: string
+          captured_at?: string
+          headline_text?: string
+          id?: string
+          source?: Database["public"]["Enums"]["headline_source"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "headline_snapshots_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outlets: {
+        Row: {
+          authority_tier: string
+          created_at: string
+          id: string
+          name: string
+          url: string
+        }
+        Insert: {
+          authority_tier: string
+          created_at?: string
+          id?: string
+          name: string
+          url: string
+        }
+        Update: {
+          authority_tier?: string
+          created_at?: string
+          id?: string
+          name?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      signals_agency_framing: {
+        Row: {
+          agency_score: number
+          article_id: string
+          example_phrases: Json
+        }
+        Insert: {
+          agency_score: number
+          article_id: string
+          example_phrases?: Json
+        }
+        Update: {
+          agency_score?: number
+          article_id?: string
+          example_phrases?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signals_agency_framing_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: true
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signals_language_intensity: {
+        Row: {
+          article_id: string
+          certainty_score: number
+          emotional_score: number
+          urgency_score: number
+        }
+        Insert: {
+          article_id: string
+          certainty_score: number
+          emotional_score: number
+          urgency_score: number
+        }
+        Update: {
+          article_id?: string
+          certainty_score?: number
+          emotional_score?: number
+          urgency_score?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signals_language_intensity_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: true
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signals_source_attribution: {
+        Row: {
+          article_id: string
+          independent_ratio: number
+          official_ratio: number
+        }
+        Insert: {
+          article_id: string
+          independent_ratio: number
+          official_ratio: number
+        }
+        Update: {
+          article_id?: string
+          independent_ratio?: number
+          official_ratio?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signals_source_attribution_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: true
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stakeholders: {
+        Row: {
+          event_id: string
+          first_appeared_at: string | null
+          id: string
+          name: string
+          role: string
+        }
+        Insert: {
+          event_id: string
+          first_appeared_at?: string | null
+          id?: string
+          name: string
+          role: string
+        }
+        Update: {
+          event_id?: string
+          first_appeared_at?: string | null
+          id?: string
+          name?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakeholders_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +293,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      headline_source: "wayback" | "live"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +420,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      headline_source: ["wayback", "live"],
+    },
   },
 } as const
