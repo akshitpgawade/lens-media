@@ -1,0 +1,498 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { diffWords } from "diff";
+import { Check, Minus, Loader2 } from "lucide-react";
+import { fetchEventBundle, type EventBundle } from "@/lib/narrative-data";
+
+export const Route = createFileRoute("/_authenticated/dashboard/$eventId")({
+  head: () => ({
+    meta: [
+      { title: "Coverage dashboard — Narrative Lens" },
+      { name: "description", content: "Compare how outlets cover the same event, signal by signal." },
+      { property: "og:title", content: "Coverage dashboard — Narrative Lens" },
+      { property: "og:description", content: "Compare outlet coverage across measurable signals." },
+    ],
+  }),
+  component: DashboardPage,
+});
+
+function DashboardPage() {
+  const { eventId } = Route.useParams();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["event-bundle", eventId],
+    queryFn: () => fetchEventBundle(eventId),
+  });
+
+  if (isLoading) {
+    return (
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-6 py-24 text-ink-muted">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading coverage…
+      </div>
+    );
+  }
+  if (error || !data) {
+    return (
+      <div className="mx-auto max-w-2xl px-6 py-24">
+        <p className="eyebrow">Error</p>
+        <h1 className="headline mt-2 text-3xl">Couldn't load this event.</h1>
+        <Link to="/analyze" className="mt-4 inline-block text-accent underline">
+          Back to Analyze
+        </Link>
+      </div>
+    );
+  }
+
+  return <DashboardBody bundle={data} />;
+}
+
+function DashboardBody({ bundle }: { bundle: EventBundle }) {
+  const { event, outlets, articles, snapshots, stakeholders, signals } = bundle;
+
+  const outletById = useMemo(
+    () => Object.fromEntries(outlets.map((o) => [o.id, o])),
+    [outlets],
+  );
+  const articleByOutlet = useMemo(
+    () => Object.fromEntries(articles.map((a) => [a.outlet_id, a])),
+    [articles],
+  );
+  const publishedRange = useMemo(() => {
+    const dates = articles.map((a) => new Date(a.published_at).getTime());
+    const min = new Date(Math.min(...dates, new Date(event.first_reported_at).getTime()));
+    const max = new Date(Math.max(...dates));
+    return { min, max };
+  }, [articles, event]);
+
+  return (
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      {/* Masthead */}
+      <div className="border-b-4 border-double border-rule pb-8">
+        <p className="eyebrow">Comparison Edition · {new Date(event.first_reported_at).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}</p>
+        <h1 className="headline mt-4 text-5xl leading-[1.02] sm:text-6xl">
+          {event.title}
+        </h1>
+        <p className="mt-6 max-w-3xl font-serif text-lg leading-relaxed text-ink-muted">
+          {event.summary}
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-2 text-xs">
+          <span className="eyebrow mr-2">Outlets:</span>
+          {outlets.map((o) => (
+            <span key={o.id} className="rounded-full border border-rule bg-card px-3 py-1 font-medium">
+              {o.name} <span className="text-ink-muted">· {o.authority_tier}</span>
+            </span>
+          ))}
+          <span className="ml-4 eyebrow">Range:</span>
+          <span className="font-mono text-[11px] text-ink-muted">
+            {publishedRange.min.toLocaleString()} → {publishedRange.max.toLocaleString()}
+          </span>
+        </div>
+      </div>
+
+      {/* Two-column newspaper grid */}
+      <div className="mt-10 grid gap-8 lg:grid-cols-12">
+        {/* LEFT column */}
+        <div className="space-y-10 lg:col-span-7">
+          <SectionCard n="01" title="Source Attribution Ratio" caption="Who is quoted — official versus independent voices, per outlet.">
+            <SourceAttributionChart
+              rows={signals.source_attribution.map((r) => {
+                const art = articles.find((a) => a.id === r.article_id)!;
+                return {
+                  outlet: outletById[art.outlet_id].name,
+                  official: Math.round(r.official_ratio * 100),
+                  independent: Math.round(r.independent_ratio * 100),
+                };
+              })}
+            />
+          </SectionCard>
+
+          <SectionCard n="03" title="Language Intensity" caption="Emotional load, certainty, and urgency in the writing, per outlet.">
+            <LanguageIntensityChart
+              rows={signals.language_intensity.map((r) => {
+                const art = articles.find((a) => a.id === r.article_id)!;
+                return {
+                  outlet: outletById[art.outlet_id].name,
+                  Emotional: Math.round(r.emotional_score * 100),
+                  Certainty: Math.round(r.certainty_score * 100),
+                  Urgency: Math.round(r.urgency_score * 100),
+                };
+              })}
+            />
+          </SectionCard>
+
+          <SectionCard n="04" title="Perspective Coverage Matrix" caption="Which stakeholders are represented in each outlet's coverage.">
+            <CoverageMatrix
+              stakeholders={stakeholders}
+              outlets={outlets}
+              articleByOutlet={articleByOutlet}
+              coverage={signals.coverage_matrix}
+            />
+          </SectionCard>
+        </div>
+
+        {/* RIGHT column */}
+        <div className="space-y-10 lg:col-span-5">
+          <SectionCard n="02" title="Agency Framing" caption="Active vs. passive/agentless sentence construction — with example phrases.">
+            <AgencyFraming
+              rows={signals.agency_framing.map((r) => {
+                const art = articles.find((a) => a.id === r.article_id)!;
+                return {
+                  outlet: outletById[art.outlet_id].name,
+                  score: Math.round(r.agency_score * 100),
+                  phrases: r.example_phrases,
+                };
+              })}
+            />
+          </SectionCard>
+
+          <SectionCard n="05" title="Headline Diff · FrameShift Replay" caption="How the headline changed between two snapshots.">
+            <HeadlineDiff
+              articles={articles}
+              outletById={outletById}
+              snapshots={snapshots}
+            />
+          </SectionCard>
+
+          <SectionCard n="06" title="Narrative Evolution Timeline" caption="When each stakeholder or angle first entered the coverage.">
+            <NarrativeTimeline stakeholders={stakeholders} />
+          </SectionCard>
+        </div>
+      </div>
+
+      <p className="mt-16 border-t border-rule pt-6 text-xs italic text-ink-muted">
+        Observations, not verdicts. See <Link to="/methodology" className="underline">methodology</Link> for how each signal is measured.
+      </p>
+    </div>
+  );
+}
+
+function SectionCard({ n, title, caption, children }: { n: string; title: string; caption: string; children: React.ReactNode }) {
+  return (
+    <section className="paper-card p-6">
+      <div className="flex items-baseline justify-between gap-4 border-b border-rule pb-3">
+        <div>
+          <p className="font-mono text-[10px] text-ink-muted">{n}</p>
+          <h2 className="headline mt-1 text-2xl">{title}</h2>
+        </div>
+      </div>
+      <p className="mt-3 text-sm text-ink-muted">{caption}</p>
+      <div className="mt-6">{children}</div>
+    </section>
+  );
+}
+
+/* -------- Charts / signal renderers -------- */
+
+const INK = "oklch(0.19 0.015 60)";
+const ACCENT = "oklch(0.52 0.14 25)";
+const MUTED = "oklch(0.72 0.02 70)";
+
+function SourceAttributionChart({ rows }: { rows: { outlet: string; official: number; independent: number }[] }) {
+  return (
+    <div className="h-[280px] w-full">
+      <ResponsiveContainer>
+        <BarChart data={rows} layout="vertical" margin={{ left: 20, right: 20, top: 10, bottom: 10 }} stackOffset="expand">
+          <CartesianGrid horizontal={false} stroke="var(--color-rule)" />
+          <XAxis type="number" hide domain={[0, 100]} />
+          <YAxis dataKey="outlet" type="category" tickLine={false} axisLine={false} width={130} tick={{ fontSize: 12, fill: INK }} />
+          <Tooltip cursor={{ fill: "var(--color-secondary)" }} formatter={(v: number) => `${v}%`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Bar dataKey="official" name="Official voices" stackId="a" fill={INK} />
+          <Bar dataKey="independent" name="Independent voices" stackId="a" fill={ACCENT} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function LanguageIntensityChart({ rows }: { rows: { outlet: string; Emotional: number; Certainty: number; Urgency: number }[] }) {
+  return (
+    <div className="h-[300px] w-full">
+      <ResponsiveContainer>
+        <BarChart data={rows} margin={{ left: 0, right: 12, top: 10, bottom: 10 }}>
+          <CartesianGrid stroke="var(--color-rule)" vertical={false} />
+          <XAxis dataKey="outlet" tick={{ fontSize: 11, fill: INK }} interval={0} />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: INK }} />
+          <Tooltip formatter={(v: number) => `${v}/100`} contentStyle={{ fontSize: 12, borderColor: "var(--color-rule)", background: "var(--color-card)" }} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
+          <Bar dataKey="Emotional" fill={ACCENT} />
+          <Bar dataKey="Certainty" fill={INK} />
+          <Bar dataKey="Urgency" fill="oklch(0.62 0.11 150)" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+
+function AgencyFraming({ rows }: { rows: { outlet: string; score: number; phrases: { text: string; type: string }[] }[] }) {
+  return (
+    <div className="space-y-6">
+      {rows.map((r) => (
+        <div key={r.outlet} className="border-b border-rule pb-4 last:border-none last:pb-0">
+          <div className="flex items-baseline justify-between">
+            <p className="font-serif text-lg">{r.outlet}</p>
+            <span className="font-mono text-sm">
+              <strong className="text-xl">{r.score}</strong>
+              <span className="text-ink-muted">/100 agency</span>
+            </span>
+          </div>
+          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+            <div className="h-full bg-ink" style={{ width: `${r.score}%` }} />
+          </div>
+          <ul className="mt-3 space-y-1.5">
+            {r.phrases.map((p, i) => (
+              <li key={i} className="text-sm">
+                <span
+                  className={
+                    p.type === "active"
+                      ? "border-b-2 border-ink"
+                      : p.type === "passive"
+                      ? "bg-accent/10 border-b-2 border-accent"
+                      : "bg-muted line-through decoration-ink-muted"
+                  }
+                >
+                  “{p.text}”
+                </span>{" "}
+                <span className="ml-1 font-mono text-[10px] uppercase text-ink-muted">{p.type}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CoverageMatrix({
+  stakeholders,
+  outlets,
+  articleByOutlet,
+  coverage,
+}: {
+  stakeholders: EventBundle["stakeholders"];
+  outlets: EventBundle["outlets"];
+  articleByOutlet: Record<string, EventBundle["articles"][number]>;
+  coverage: EventBundle["signals"]["coverage_matrix"];
+}) {
+  const lookup = useMemo(() => {
+    const m = new Map<string, boolean>();
+    for (const c of coverage) m.set(`${c.article_id}:${c.stakeholder_id}`, c.present);
+    return m;
+  }, [coverage]);
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full border-collapse text-sm">
+        <thead>
+          <tr>
+            <th className="border-b border-rule py-2 text-left font-serif text-base font-normal">Stakeholder</th>
+            {outlets.map((o) => (
+              <th key={o.id} className="border-b border-rule px-2 py-2 text-center text-xs font-medium">
+                {o.name}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {stakeholders.map((s) => (
+            <tr key={s.id} className="hover:bg-secondary/40">
+              <td className="border-b border-rule py-3 pr-4">
+                <span className="font-serif">{s.name}</span>
+                <span className="ml-2 font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
+              </td>
+              {outlets.map((o) => {
+                const art = articleByOutlet[o.id];
+                const present = art ? lookup.get(`${art.id}:${s.id}`) : undefined;
+                return (
+                  <td key={o.id} className="border-b border-rule px-2 py-3 text-center">
+                    {present ? (
+                      <span title="Present" className="inline-flex items-center gap-1 text-success">
+                        <Check className="h-4 w-4" />
+                        <span className="sr-only">present</span>
+                      </span>
+                    ) : (
+                      <span title="Absent" className="inline-flex items-center gap-1 text-ink-muted">
+                        <Minus className="h-4 w-4" />
+                        <span className="sr-only">absent</span>
+                      </span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-xs text-ink-muted">
+        <Check className="mr-1 inline h-3 w-3 text-success" /> Represented ·{" "}
+        <Minus className="ml-2 mr-1 inline h-3 w-3" /> Not represented. Absence is a signal, not proof of intent.
+      </p>
+    </div>
+  );
+}
+
+function HeadlineDiff({
+  articles,
+  outletById,
+  snapshots,
+}: {
+  articles: EventBundle["articles"];
+  outletById: Record<string, EventBundle["outlets"][number]>;
+  snapshots: EventBundle["snapshots"];
+}) {
+  const [articleId, setArticleId] = useState(articles[0]?.id ?? "");
+  const articleSnaps = useMemo(
+    () => snapshots.filter((s) => s.article_id === articleId).sort((a, b) => a.captured_at.localeCompare(b.captured_at)),
+    [snapshots, articleId],
+  );
+  const [fromId, setFromId] = useState(articleSnaps[0]?.id ?? "");
+  const [toId, setToId] = useState(articleSnaps[articleSnaps.length - 1]?.id ?? "");
+
+  // Reset when article changes
+  const currentFromValid = articleSnaps.some((s) => s.id === fromId);
+  const currentToValid = articleSnaps.some((s) => s.id === toId);
+  const effectiveFrom = currentFromValid ? fromId : articleSnaps[0]?.id;
+  const effectiveTo = currentToValid ? toId : articleSnaps[articleSnaps.length - 1]?.id;
+
+  const from = articleSnaps.find((s) => s.id === effectiveFrom);
+  const to = articleSnaps.find((s) => s.id === effectiveTo);
+
+  const parts = useMemo(() => {
+    if (!from || !to) return [];
+    return diffWords(from.headline_text, to.headline_text);
+  }, [from, to]);
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <label className="block text-xs">
+          <span className="eyebrow">Article</span>
+          <select
+            value={articleId}
+            onChange={(e) => {
+              setArticleId(e.target.value);
+              setFromId("");
+              setToId("");
+            }}
+            className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
+          >
+            {articles.map((a) => (
+              <option key={a.id} value={a.id}>
+                {outletById[a.outlet_id].name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs">
+          <span className="eyebrow">From</span>
+          <select
+            value={effectiveFrom}
+            onChange={(e) => setFromId(e.target.value)}
+            className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
+          >
+            {articleSnaps.map((s) => (
+              <option key={s.id} value={s.id}>
+                {new Date(s.captured_at).toLocaleString()} · {s.source}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-xs">
+          <span className="eyebrow">To</span>
+          <select
+            value={effectiveTo}
+            onChange={(e) => setToId(e.target.value)}
+            className="mt-1 w-full rounded-md border border-rule bg-background px-2 py-2 text-sm"
+          >
+            {articleSnaps.map((s) => (
+              <option key={s.id} value={s.id}>
+                {new Date(s.captured_at).toLocaleString()} · {s.source}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="rounded-md border border-rule bg-background p-4 font-serif text-lg leading-snug">
+        {parts.length === 0 ? (
+          <span className="text-ink-muted">Select two snapshots.</span>
+        ) : (
+          parts.map((p, i) => {
+            if (p.added) {
+              return (
+                <span key={i} className="bg-success/15 text-success">
+                  {p.value}
+                </span>
+              );
+            }
+            if (p.removed) {
+              return (
+                <span key={i} className="bg-accent/15 text-accent line-through">
+                  {p.value}
+                </span>
+              );
+            }
+            return <span key={i}>{p.value}</span>;
+          })
+        )}
+      </div>
+
+      <p className="text-xs text-ink-muted">
+        <span className="rounded bg-success/15 px-1 text-success">added</span>{" "}
+        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>
+      </p>
+    </div>
+  );
+}
+
+function NarrativeTimeline({ stakeholders }: { stakeholders: EventBundle["stakeholders"] }) {
+  const withDates = stakeholders.filter((s) => s.first_appeared_at);
+  if (withDates.length === 0) return <p className="text-sm text-ink-muted">No timeline data.</p>;
+  const times = withDates.map((s) => new Date(s.first_appeared_at!).getTime());
+  const min = Math.min(...times);
+  const max = Math.max(...times);
+  const span = Math.max(max - min, 1);
+
+  return (
+    <div className="relative pt-6">
+      <div className="relative h-1 w-full rounded-full bg-secondary">
+        <div className="absolute inset-y-0 left-0 h-full rounded-full bg-ink/30" />
+      </div>
+      <ul className="mt-6 space-y-3">
+        {withDates.map((s) => {
+          const t = new Date(s.first_appeared_at!).getTime();
+          const pct = ((t - min) / span) * 100;
+          return (
+            <li key={s.id} className="relative pl-6">
+              <span
+                className="absolute left-0 top-2 h-2 w-2 rounded-full bg-accent"
+                style={{ marginLeft: `min(${pct}%, calc(100% - 8px))` }}
+                aria-hidden
+              />
+              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-rule pb-2">
+                <p className="font-serif text-base">
+                  {s.name}{" "}
+                  <span className="font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
+                </p>
+                <span className="font-mono text-[11px] text-ink-muted">
+                  {new Date(s.first_appeared_at!).toLocaleString()}
+                </span>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
