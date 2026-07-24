@@ -86,40 +86,43 @@ function Landing() {
           not conclusions we've drawn for you.
         </p>
 
-        <div className="mt-10 grid gap-6 md:grid-cols-2">
-          <div className="paper-card p-8">
-            <p className="eyebrow text-accent">We do not</p>
-            <ul className="mt-6 space-y-4">
+        <div className="mt-10 overflow-hidden rounded-md border border-rule">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-rule">
+                <th className="w-1/2 bg-accent/10 px-6 py-4">
+                  <p className="eyebrow text-accent">We do NOT</p>
+                </th>
+                <th className="w-1/2 bg-success/10 px-6 py-4">
+                  <p className="eyebrow text-success">We DO</p>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="font-serif text-base">
               {[
-                "Label articles as biased, misleading, or propaganda",
-                "Rate outlets on a left–right political spectrum",
-                "Decide which account of events is true",
-                "Suppress, downrank, or flag any coverage",
-              ].map((t) => (
-                <li key={t} className="flex gap-3 text-sm">
-                  <X className="mt-0.5 h-4 w-4 flex-shrink-0 text-accent" />
-                  <span>{t}</span>
-                </li>
+                ["Label articles \u201Cbiased\u201D or \u201Cpropaganda\u201D", "Surface measurable signals in language, sourcing, and framing"],
+                ["Issue AI verdicts on what's true", "Provide evidence for users to interpret themselves"],
+                ["Scrape content aggressively", "Use RSS feeds and archived data respectfully"],
+                ["Rate outlets on a left\u2013right political spectrum", "Show which perspectives appear or are missing per outlet"],
+                ["Suppress, downrank, or flag any coverage", "Replay how headlines changed over time"],
+              ].map(([no, yes], i) => (
+                <tr key={i} className="border-b border-rule last:border-b-0">
+                  <td className="bg-accent/[0.06] px-6 py-4 align-top">
+                    <div className="flex gap-3">
+                      <X className="mt-1 h-4 w-4 flex-shrink-0 text-accent" />
+                      <span>{no}</span>
+                    </div>
+                  </td>
+                  <td className="bg-success/[0.06] px-6 py-4 align-top">
+                    <div className="flex gap-3">
+                      <Check className="mt-1 h-4 w-4 flex-shrink-0 text-success" />
+                      <span>{yes}</span>
+                    </div>
+                  </td>
+                </tr>
               ))}
-            </ul>
-          </div>
-          <div className="paper-card p-8">
-            <p className="eyebrow">We do</p>
-            <ul className="mt-6 space-y-4">
-              {[
-                "Surface who is quoted — officials vs. independent voices",
-                "Compare sentence agency: active vs. passive framing",
-                "Measure emotional load, certainty, and urgency in language",
-                "Show which perspectives appear or are missing per outlet",
-                "Replay how headlines changed over time",
-              ].map((t) => (
-                <li key={t} className="flex gap-3 text-sm">
-                  <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
-                  <span>{t}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+            </tbody>
+          </table>
         </div>
       </section>
 
