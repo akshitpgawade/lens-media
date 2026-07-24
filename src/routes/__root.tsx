@@ -77,21 +77,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Narrative Lens — Comparative media analysis" },
+      { title: "Narrative Lens — See how coverage differs, measurably" },
       {
         name: "description",
         content:
-          "See how outlets cover the same event differently. Narrative Lens surfaces measurable, explainable signals — sourcing, framing, tone, and coverage gaps.",
+          "Compare how outlets cover the same news event. Narrative Lens visualizes measurable changes in language, sourcing, emphasis, and perspective — never a verdict.",
       },
       { name: "author", content: "Narrative Lens" },
-      { property: "og:title", content: "Narrative Lens" },
+      { property: "og:title", content: "Narrative Lens — See how coverage differs, measurably" },
       {
         property: "og:description",
         content:
-          "A media-literacy dashboard for comparing coverage across outlets and over time.",
+          "Compare how outlets cover the same news event. Narrative Lens visualizes measurable changes in language, sourcing, emphasis, and perspective — never a verdict.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Narrative Lens — See how coverage differs, measurably" },
+      { name: "twitter:description", content: "Compare how outlets cover the same news event. Narrative Lens visualizes measurable changes in language, sourcing, emphasis, and perspective — never a verdict." },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/a407881b-d434-426e-a3eb-824d4f66e824" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/a407881b-d434-426e-a3eb-824d4f66e824" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },

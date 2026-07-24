@@ -10,11 +10,11 @@ export const Route = createFileRoute("/")({
         content:
           "Compare how outlets cover the same news event. Narrative Lens visualizes measurable changes in language, sourcing, emphasis, and perspective — never a verdict.",
       },
-      { property: "og:title", content: "Narrative Lens — Comparative media analysis" },
+      { property: "og:title", content: "Narrative Lens — See how coverage differs, measurably" },
       {
         property: "og:description",
         content:
-          "A media-literacy dashboard for comparing coverage across outlets and over time.",
+          "Compare how outlets cover the same news event. Narrative Lens visualizes measurable changes in language, sourcing, emphasis, and perspective — never a verdict.",
       },
     ],
   }),
