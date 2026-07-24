@@ -57,7 +57,15 @@ export default function MethodologyPage() {
     <div className="mx-auto max-w-4xl px-6 py-20">
       <p className="eyebrow">Methodology</p>
       <h1 className="headline mt-3 text-5xl">Observations, not verdicts.</h1>
-      <p className="mt-6 max-w-2xl font-serif text-xl leading-relaxed text-ink-muted">
+      <div className="mt-6 border-l-2 border-accent/60 bg-secondary/40 px-6 py-5">
+        <p className="max-w-3xl font-serif text-lg leading-relaxed">
+          Our work is inspired by media framing theory, including Herman &amp; Chomsky's
+          Propaganda Model as one interpretive lens among several. We measure what is
+          computable — framing, sourcing, emphasis, language intensity, and omissions —
+          and let users draw their own conclusions. These are observations, not verdicts.
+        </p>
+      </div>
+      <p className="mt-8 max-w-2xl font-serif text-xl leading-relaxed text-ink-muted">
         Every signal on Narrative Lens is a measurable property of a text you can inspect,
         argue with, or dismiss. We describe what a story emphasizes — we don't tell you
         what to conclude.
