@@ -205,7 +205,7 @@ function SectionCard({ n, title, caption, tip, children }: { n: string; title: s
                     aria-label={`About ${title}`}
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full text-ink-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Info className="h-4 w-4" />
+                    <HelpCircle className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs font-sans text-xs leading-relaxed">
