@@ -16,8 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { diffWords } from "diff";
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Info, Loader2, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, HelpCircle, Loader2, Minus } from "lucide-react";
 import {
   Tooltip as UITooltip,
   TooltipContent,
@@ -206,7 +205,7 @@ function SectionCard({ n, title, caption, tip, children }: { n: string; title: s
                     aria-label={`About ${title}`}
                     className="inline-flex h-5 w-5 items-center justify-center rounded-full text-ink-muted transition hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                   >
-                    <Info className="h-4 w-4" />
+                    <HelpCircle className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
                 <TooltipContent side="top" className="max-w-xs font-sans text-xs leading-relaxed">
@@ -491,15 +490,29 @@ function HeadlineDiff({
     [snapshots],
   );
 
-  const [fromId, setFromId] = useState(allSnaps[0]?.id ?? "");
-  const [toId, setToId] = useState(allSnaps[allSnaps.length - 1]?.id ?? "");
+  // Default to two snapshots from the SAME article so rewording is visible.
+  const defaultPair = useMemo(() => {
+    const byArticle = new Map<string, typeof allSnaps>();
+    for (const s of allSnaps) {
+      const arr = byArticle.get(s.article_id) ?? [];
+      arr.push(s);
+      byArticle.set(s.article_id, arr);
+    }
+    for (const arr of byArticle.values()) {
+      if (arr.length >= 2) return { from: arr[0].id, to: arr[arr.length - 1].id };
+    }
+    return { from: allSnaps[0]?.id ?? "", to: allSnaps[allSnaps.length - 1]?.id ?? "" };
+  }, [allSnaps]);
+
+  const [fromId, setFromId] = useState(defaultPair.from);
+  const [toId, setToId] = useState(defaultPair.to);
 
   const from = allSnaps.find((s) => s.id === fromId) ?? allSnaps[0];
   const to = allSnaps.find((s) => s.id === toId) ?? allSnaps[allSnaps.length - 1];
 
   const parts = useMemo(() => {
-    if (!from || !to) return [];
-    return diffWords(from.headline_text, to.headline_text);
+    if (!from || !to) return [] as DiffPart[];
+    return wordDiff(from.headline_text, to.headline_text);
   }, [from, to]);
 
   const labelFor = (s: EventBundle["snapshots"][number]) => {
@@ -550,34 +563,28 @@ function HeadlineDiff({
       ) : null}
 
       <div className="rounded-md border border-rule bg-background p-4 font-serif text-lg leading-snug">
-        {parts.length === 0 ? (
-          <span className="text-ink-muted">Select two snapshots.</span>
+        {parts.length === 0 || from?.id === to?.id ? (
+          <span className="text-ink-muted">Select two different snapshots to see the diff.</span>
         ) : (
           parts.map((p, i) => {
-            const prev = parts[i - 1];
-            const next = parts[i + 1];
-            const isReworded =
-              (p.removed && next?.added) || (p.added && prev?.removed);
-            if (isReworded) {
+            if (p.type === "reworded") {
               return (
-                <span
-                  key={i}
-                  className={`bg-yellow-200/60 text-ink ${p.removed ? "line-through decoration-ink-muted" : ""}`}
-                >
+                <span key={i}>
+                  <span className="bg-yellow-200/70 text-ink line-through decoration-ink-muted">{p.from}</span>
+                  <span className="bg-yellow-200/70 text-ink"> {p.to}</span>
+                </span>
+              );
+            }
+            if (p.type === "added") {
+              return (
+                <span key={i} className="bg-green-200/70 text-green-900">
                   {p.value}
                 </span>
               );
             }
-            if (p.added) {
+            if (p.type === "removed") {
               return (
-                <span key={i} className="bg-success/15 text-success">
-                  {p.value}
-                </span>
-              );
-            }
-            if (p.removed) {
-              return (
-                <span key={i} className="bg-accent/15 text-accent line-through">
+                <span key={i} className="bg-red-200/70 text-red-900 line-through">
                   {p.value}
                 </span>
               );
@@ -588,51 +595,116 @@ function HeadlineDiff({
       </div>
 
       <p className="text-xs text-ink-muted">
-        <span className="rounded bg-success/15 px-1 text-success">added</span>{" "}
-        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>{" "}
-        <span className="ml-2 rounded bg-yellow-200/60 px-1 text-ink">reworded</span>
+        <span className="rounded bg-green-200/70 px-1 text-green-900">added</span>{" "}
+        <span className="ml-2 rounded bg-red-200/70 px-1 text-red-900 line-through">removed</span>{" "}
+        <span className="ml-2 rounded bg-yellow-200/70 px-1 text-ink">reworded</span>
       </p>
     </div>
   );
 }
 
+type DiffPart =
+  | { type: "equal"; value: string }
+  | { type: "added"; value: string }
+  | { type: "removed"; value: string }
+  | { type: "reworded"; from: string; to: string };
+
+function wordDiff(a: string, b: string): DiffPart[] {
+  const aw = a.split(/(\s+)/);
+  const bw = b.split(/(\s+)/);
+  const n = aw.length;
+  const m = bw.length;
+  // LCS table
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = aw[i] === bw[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+  const raw: DiffPart[] = [];
+  let i = 0, j = 0;
+  while (i < n && j < m) {
+    if (aw[i] === bw[j]) {
+      raw.push({ type: "equal", value: aw[i] });
+      i++; j++;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      raw.push({ type: "removed", value: aw[i] });
+      i++;
+    } else {
+      raw.push({ type: "added", value: bw[j] });
+      j++;
+    }
+  }
+  while (i < n) raw.push({ type: "removed", value: aw[i++] });
+  while (j < m) raw.push({ type: "added", value: bw[j++] });
+
+  // Coalesce adjacent removed+added (ignoring whitespace equals between) into reworded.
+  const out: DiffPart[] = [];
+  let k = 0;
+  while (k < raw.length) {
+    const r = raw[k];
+    if (r.type === "removed") {
+      // collect run of removed
+      let removedText = "";
+      while (k < raw.length && raw[k].type === "removed") {
+        removedText += (raw[k] as { value: string }).value;
+        k++;
+      }
+      // skip optional whitespace equal
+      let ws = "";
+      while (k < raw.length && raw[k].type === "equal" && /^\s+$/.test((raw[k] as { value: string }).value)) {
+        ws += (raw[k] as { value: string }).value;
+        k++;
+      }
+      if (k < raw.length && raw[k].type === "added") {
+        let addedText = "";
+        while (k < raw.length && raw[k].type === "added") {
+          addedText += (raw[k] as { value: string }).value;
+          k++;
+        }
+        out.push({ type: "reworded", from: removedText, to: addedText });
+      } else {
+        out.push({ type: "removed", value: removedText });
+        if (ws) out.push({ type: "equal", value: ws });
+      }
+    } else {
+      out.push(r);
+      k++;
+    }
+  }
+  return out;
+}
+
+
 function NarrativeTimeline({ stakeholders }: { stakeholders: EventBundle["stakeholders"] }) {
   const withDates = stakeholders.filter((s) => s.first_appeared_at);
   if (withDates.length === 0) return <p className="text-sm text-ink-muted">No timeline data.</p>;
-  const times = withDates.map((s) => new Date(s.first_appeared_at!).getTime());
-  const min = Math.min(...times);
-  const max = Math.max(...times);
-  const span = Math.max(max - min, 1);
+  const sorted = [...withDates].sort(
+    (a, b) => new Date(a.first_appeared_at!).getTime() - new Date(b.first_appeared_at!).getTime(),
+  );
 
   return (
-    <div className="relative pt-6">
-      <div className="relative h-1 w-full rounded-full bg-secondary">
-        <div className="absolute inset-y-0 left-0 h-full rounded-full bg-ink/30" />
-      </div>
-      <ul className="mt-6 space-y-3">
-        {withDates.map((s) => {
-          const t = new Date(s.first_appeared_at!).getTime();
-          const pct = ((t - min) / span) * 100;
-          return (
-            <li key={s.id} className="relative pl-6">
-              <span
-                className="absolute left-0 top-2 h-2 w-2 rounded-full bg-accent"
-                style={{ marginLeft: `min(${pct}%, calc(100% - 8px))` }}
-                aria-hidden
-              />
-              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-rule pb-2">
-                <p className="font-serif text-base">
-                  {s.name}{" "}
-                  <span className="font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
-                </p>
-                <span className="font-mono text-[11px] text-ink-muted">
-                  {new Date(s.first_appeared_at!).toLocaleString()}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <ul className="space-y-3">
+      {sorted.map((s) => (
+        <li
+          key={s.id}
+          className="flex items-center gap-3 border-b border-rule pb-2 last:border-none"
+        >
+          <span
+            className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-accent"
+            style={{ marginRight: 4 }}
+            aria-hidden
+          />
+          <p className="min-w-0 flex-1 font-serif text-base">
+            {s.name}{" "}
+            <span className="ml-1 font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
+          </p>
+          <span className="flex-shrink-0 font-mono text-[11px] text-ink-muted">
+            {new Date(s.first_appeared_at!).toLocaleString()}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
+
