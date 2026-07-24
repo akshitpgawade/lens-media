@@ -32,7 +32,10 @@ function Landing() {
             <h1 className="headline mt-6 text-5xl leading-[0.98] sm:text-6xl lg:text-7xl">
               See how the same story is <em className="text-accent not-italic">told differently</em>.
             </h1>
-            <p className="mt-8 max-w-2xl font-serif text-xl leading-relaxed text-ink-muted">
+            <p className="mt-6 max-w-2xl font-serif text-lg italic leading-relaxed text-ink">
+              Narrative Lens visualizes measurable changes in language, sourcing, and perspective — not verdicts on what's true.
+            </p>
+            <p className="mt-6 max-w-2xl font-serif text-xl leading-relaxed text-ink-muted">
               Instead of deciding what's true, Narrative Lens visualizes measurable
               changes in language, sourcing, emphasis, and perspective across outlets
               and over time.
