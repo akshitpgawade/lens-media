@@ -554,6 +554,20 @@ function HeadlineDiff({
           <span className="text-ink-muted">Select two snapshots.</span>
         ) : (
           parts.map((p, i) => {
+            const prev = parts[i - 1];
+            const next = parts[i + 1];
+            const isReworded =
+              (p.removed && next?.added) || (p.added && prev?.removed);
+            if (isReworded) {
+              return (
+                <span
+                  key={i}
+                  className={`bg-yellow-200/60 text-ink ${p.removed ? "line-through decoration-ink-muted" : ""}`}
+                >
+                  {p.value}
+                </span>
+              );
+            }
             if (p.added) {
               return (
                 <span key={i} className="bg-success/15 text-success">
@@ -575,7 +589,8 @@ function HeadlineDiff({
 
       <p className="text-xs text-ink-muted">
         <span className="rounded bg-success/15 px-1 text-success">added</span>{" "}
-        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>
+        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>{" "}
+        <span className="ml-2 rounded bg-yellow-200/60 px-1 text-ink">reworded</span>
       </p>
     </div>
   );
