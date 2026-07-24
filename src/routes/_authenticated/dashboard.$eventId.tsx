@@ -116,7 +116,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
       <div className="mt-10 grid gap-8 lg:grid-cols-12">
         {/* LEFT column */}
         <div className="space-y-10 lg:col-span-7">
-          <SectionCard n="01" title="Source Attribution Ratio" caption="Who is quoted — official versus independent voices, per outlet." tip="Measures the share of quoted sources from official institutions versus independent voices in each outlet's article.">
+          <SectionCard n="01" title="Source Attribution Ratio" caption="Who is quoted — official versus independent voices, per outlet." tip="Who gets quoted: official voices vs. independent voices.">
             <SourceAttributionChart
               rows={signals.source_attribution.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -129,7 +129,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="03" title="Language Intensity" caption="Emotional load, certainty, and urgency in the writing, per outlet." tip="Scores three qualities of the writing: how emotionally charged, how certain, and how urgent the language sounds.">
+          <SectionCard n="03" title="Language Intensity" caption="Emotional load, certainty, and urgency in the writing, per outlet." tip="Emotional load, certainty, and urgency in language.">
             <LanguageIntensityChart
               rows={signals.language_intensity.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -143,7 +143,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="04" title="Perspective Coverage Matrix" caption="Which stakeholders are represented in each outlet's coverage." tip="Shows which people or groups affected by the story each outlet actually quoted or referenced.">
+          <SectionCard n="04" title="Perspective Coverage Matrix" caption="Which stakeholders are represented in each outlet's coverage." tip="Which stakeholders each outlet includes.">
             <CoverageMatrix
               stakeholders={stakeholders}
               outlets={outlets}
@@ -155,7 +155,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
 
         {/* RIGHT column */}
         <div className="space-y-10 lg:col-span-5">
-          <SectionCard n="02" title="Agency Framing" caption="Active vs. passive/agentless sentence construction — with example phrases." tip="Measures how often each outlet names an actor doing something versus using passive or agentless phrasing that hides who acted.">
+          <SectionCard n="02" title="Agency Framing" caption="Active vs. passive/agentless sentence construction — with example phrases." tip="How directly the text assigns responsibility.">
             <AgencyFraming
               rows={signals.agency_framing.map((r) => {
                 const art = articles.find((a) => a.id === r.article_id)!;
@@ -168,7 +168,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="05" title="Headline Diff · FrameShift Replay" caption="How the headline changed between two snapshots." tip="Compares any two captured versions of a headline, word by word, so you can see what was added, removed, or reworded over time.">
+          <SectionCard n="05" title="Headline Diff · FrameShift Replay" caption="How the headline changed between two snapshots." tip="How the headline changed over time.">
             <HeadlineDiff
               articles={articles}
               outletById={outletById}
@@ -176,7 +176,7 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
             />
           </SectionCard>
 
-          <SectionCard n="06" title="Narrative Evolution Timeline" caption="When each stakeholder or angle first entered the coverage." tip="Plots the first moment each stakeholder appeared anywhere in the coverage, showing which voices were early and which arrived late.">
+          <SectionCard n="06" title="Narrative Evolution Timeline" caption="When each stakeholder or angle first entered the coverage." tip="When each stakeholder or angle first entered the coverage.">
             <NarrativeTimeline stakeholders={stakeholders} />
           </SectionCard>
         </div>
@@ -554,6 +554,20 @@ function HeadlineDiff({
           <span className="text-ink-muted">Select two snapshots.</span>
         ) : (
           parts.map((p, i) => {
+            const prev = parts[i - 1];
+            const next = parts[i + 1];
+            const isReworded =
+              (p.removed && next?.added) || (p.added && prev?.removed);
+            if (isReworded) {
+              return (
+                <span
+                  key={i}
+                  className={`bg-yellow-200/60 text-ink ${p.removed ? "line-through decoration-ink-muted" : ""}`}
+                >
+                  {p.value}
+                </span>
+              );
+            }
             if (p.added) {
               return (
                 <span key={i} className="bg-success/15 text-success">
@@ -575,7 +589,8 @@ function HeadlineDiff({
 
       <p className="text-xs text-ink-muted">
         <span className="rounded bg-success/15 px-1 text-success">added</span>{" "}
-        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>
+        <span className="ml-2 rounded bg-accent/15 px-1 text-accent line-through">removed</span>{" "}
+        <span className="ml-2 rounded bg-yellow-200/60 px-1 text-ink">reworded</span>
       </p>
     </div>
   );
