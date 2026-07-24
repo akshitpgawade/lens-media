@@ -16,8 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { diffWords } from "diff";
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, Info, Loader2, Minus } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, HelpCircle, Loader2, Minus } from "lucide-react";
 import {
   Tooltip as UITooltip,
   TooltipContent,
