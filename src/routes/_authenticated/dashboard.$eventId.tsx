@@ -679,40 +679,32 @@ function wordDiff(a: string, b: string): DiffPart[] {
 function NarrativeTimeline({ stakeholders }: { stakeholders: EventBundle["stakeholders"] }) {
   const withDates = stakeholders.filter((s) => s.first_appeared_at);
   if (withDates.length === 0) return <p className="text-sm text-ink-muted">No timeline data.</p>;
-  const times = withDates.map((s) => new Date(s.first_appeared_at!).getTime());
-  const min = Math.min(...times);
-  const max = Math.max(...times);
-  const span = Math.max(max - min, 1);
+  const sorted = [...withDates].sort(
+    (a, b) => new Date(a.first_appeared_at!).getTime() - new Date(b.first_appeared_at!).getTime(),
+  );
 
   return (
-    <div className="relative pt-6">
-      <div className="relative h-1 w-full rounded-full bg-secondary">
-        <div className="absolute inset-y-0 left-0 h-full rounded-full bg-ink/30" />
-      </div>
-      <ul className="mt-6 space-y-3">
-        {withDates.map((s) => {
-          const t = new Date(s.first_appeared_at!).getTime();
-          const pct = ((t - min) / span) * 100;
-          return (
-            <li key={s.id} className="relative pl-6">
-              <span
-                className="absolute left-0 top-2 h-2 w-2 rounded-full bg-accent"
-                style={{ marginLeft: `min(${pct}%, calc(100% - 8px))` }}
-                aria-hidden
-              />
-              <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-rule pb-2">
-                <p className="font-serif text-base">
-                  {s.name}{" "}
-                  <span className="font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
-                </p>
-                <span className="font-mono text-[11px] text-ink-muted">
-                  {new Date(s.first_appeared_at!).toLocaleString()}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+    <ul className="space-y-3">
+      {sorted.map((s) => (
+        <li
+          key={s.id}
+          className="flex items-center gap-3 border-b border-rule pb-2 last:border-none"
+        >
+          <span
+            className="h-2.5 w-2.5 flex-shrink-0 rounded-full bg-accent"
+            style={{ marginRight: 4 }}
+            aria-hidden
+          />
+          <p className="min-w-0 flex-1 font-serif text-base">
+            {s.name}{" "}
+            <span className="ml-1 font-mono text-[10px] uppercase text-ink-muted">{s.role}</span>
+          </p>
+          <span className="flex-shrink-0 font-mono text-[11px] text-ink-muted">
+            {new Date(s.first_appeared_at!).toLocaleString()}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
+
