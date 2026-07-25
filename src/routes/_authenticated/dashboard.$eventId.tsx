@@ -24,7 +24,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { fetchEventBundle, type EventBundle } from "@/lib/narrative-data";
+import { analyzeArticle, fetchEventBundle, type EventBundle } from "@/lib/narrative-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard/$eventId")({
   head: () => ({
