@@ -85,8 +85,24 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
     return { min, max };
   }, [articles, event]);
 
+  const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+
+  const runAnalysis = async (articleId: string, text: string, outletId: string) => {
+    setAnalyzingId(articleId);
+    setAnalyzeError(null);
+    try {
+      await analyzeArticle(articleId, text, outletId);
+      window.location.reload();
+    } catch (e) {
+      setAnalyzeError(e instanceof Error ? e.message : "Analysis failed");
+      setAnalyzingId(null);
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={150}>
+
     <div className="mx-auto max-w-7xl px-6 py-10">
       {/* Masthead */}
       <div className="border-b-4 border-double border-rule pb-8">
