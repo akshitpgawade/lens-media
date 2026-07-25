@@ -127,6 +127,28 @@ function DashboardBody({ bundle }: { bundle: EventBundle }) {
         </div>
       </div>
 
+      {/* Re-analyze controls */}
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        <span className="eyebrow mr-1">Re-run analysis:</span>
+        {articles.map((article) => (
+          <button
+            key={article.id}
+            type="button"
+            disabled={analyzingId !== null}
+            onClick={() => runAnalysis(article.id, article.full_text, article.outlet_id)}
+            className="inline-flex items-center gap-1.5 rounded-md border border-rule bg-card px-3 py-1.5 text-xs font-medium hover:bg-secondary disabled:opacity-60"
+          >
+            {analyzingId === article.id ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            Re-analyze {outletById[article.outlet_id]?.name ?? "outlet"}
+          </button>
+        ))}
+      </div>
+      {analyzeError ? (
+        <p className="mt-2 text-xs text-destructive">{analyzeError}</p>
+      ) : null}
+
+
+
       {/* Two-column newspaper grid */}
       <div className="mt-10 grid gap-8 lg:grid-cols-12">
         {/* LEFT column */}
