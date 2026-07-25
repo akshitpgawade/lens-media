@@ -133,3 +133,28 @@ export async function fetchEventBundle(eventId: string): Promise<EventBundle> {
     },
   };
 }
+
+const BACKEND_URL = "https://narrative-lens-backend-production.up.railway.app";
+
+export async function analyzeArticle(
+  articleId: string,
+  text: string,
+  outletId: string,
+  isHeadline: boolean = false,
+): Promise<void> {
+  const response = await fetch(`${BACKEND_URL}/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      article_id: articleId,
+      text,
+      outlet_id: outletId,
+      is_headline: isHeadline,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Analysis failed: ${error}`);
+  }
+}
